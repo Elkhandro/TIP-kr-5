@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Список покупок - Тестирование API</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .section {
+        margin-bottom: 30px;
+        padding: 15px;
+        border: 1px solid #ddd;
+      }
+      input,
+      button {
+        margin: 5px;
+        padding: 8px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Тестирование API Списка покупок</h1>
+
+    <div class="section" style="background-color: #f0f8ff">
+      <h2>📋 Текущий список покупок</h2>
+
+      <div style="margin-bottom: 15px">
+        <button onclick="loadShoppingList()">🔄 Обновить список</button>
+        <button onclick="togglePurchased()">
+          <span id="toggleText">Показать только некупленное</span>
+        </button>
+        <select id="categorySelect" onchange="filterByCategory()">
+          <option value="">Все категории</option>
+          <option value="Молочные продукты">Молочные продукты</option>
+          <option value="Хлебобулочные изделия">Хлебобулочные изделия</option>
+          <option value="Овощи и фрукты">Овощи и фрукты</option>
+          <option value="Бакалея">Бакалея</option>
+          <option value="Напитки">Напитки</option>
+        </select>
+      </div>
+
+      <table
+        id="shoppingListTable"
+        style="width: 100%; border-collapse: collapse"
+      >
+        <thead>
+          <tr style="background-color: #e6f3ff">
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border-bottom: 2px solid #ccc;
+              "
+            >
+              Название
+            </th>
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border-bottom: 2px solid #ccc;
+              "
+            >
+              Количество
+            </th>
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border-bottom: 2px solid #ccc;
+              "
+            >
+              Категория
+            </th>
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border-bottom: 2px solid #ccc;
+              "
+            >
+              Статус
+            </th>
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border-bottom: 2px solid #ccc;
+              "
+            >
+              Действия
+            </th>
+          </tr>
+        </thead>
+        <tbody id="shoppingListBody">
+          <!-- Список товаров будет загружаться здесь -->
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 20px">
+              Загрузка списка...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div id="listStats" style="margin-top: 15px; font-weight: bold"></div>
+    </div>
+    <div class="section">
+      <h2>1. Получить все товары</h2>
+      <button onclick="getAllItems()">GET /api/items</button>
+      <button onclick="getItemsByCategory()">
+        GET с фильтром по категории
+      </button>
+      <input id="categoryFilter" placeholder="Категория" />
+    </div>
+
+    <div class="section">
+      <h2>2. Получить товар по ID</h2>
+      <input id="itemId" placeholder="ID товара" />
+      <button onclick="getItemById()">GET /api/items/:id</button>
+    </div>
+
+    <div class="section">
+      <h2>3. Создать новый товар</h2>
+      <input id="itemName" placeholder="Название" />
+      <input id="itemQuantity" placeholder="Количество" type="number" />
+      <input id="itemCategory" placeholder="Категория" />
+      <button onclick="createItem()">POST /api/items</button>
+    </div>
+
+    <div class="section">
+      <h2>4. Обновить товар</h2>
+      <input id="updateId" placeholder="ID для обновления" />
+      <input id="updateName" placeholder="Новое название" />
+      <button onclick="updateItem()">PUT /api/items/:id</button>
+    </div>
+
+    <div class="section">
+      <h2>5. Удалить товар</h2>
+      <input id="deleteId" placeholder="ID для удаления" />
+      <button onclick="deleteItem()">DELETE /api/items/:id</button>
+    </div>
+
+    <h2>Ответ сервера:</h2>
+    <pre id="response"></pre>
+
+    <script>
+      const responseEl = document.getElementById("response");
+
+      async function fetchAndLog(url, options = {}) {
+        try {
+          const response = await fetch(url, options);
+          const data = await response.json();
+          responseEl.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          responseEl.textContent = "Ошибка: " + error.message;
+        }
+      }
+
+      function getAllItems() {
+        fetchAndLog("/api/items");
+      }
+
+      function getItemsByCategory() {
+        const category = document.getElementById("categoryFilter").value;
+        const url = category ? `/api/items?category=${category}` : "/api/items";
+        fetchAndLog(url);
+      }
+
+      function getItemById() {
+        const id = document.getElementById("itemId").value;
+        if (id) fetchAndLog(`/api/items/${id}`);
+      }
+
+      function createItem() {
+        const item = {
+          name: document.getElementById("itemName").value,
+          quantity:
+            parseInt(document.getElementById("itemQuantity").value) || 1,
+          category: document.getElementById("itemCategory").value,
+        };
+
+        fetchAndLog("/api/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item),
+        });
+      }
+
+      function updateItem() {
+        const id = document.getElementById("updateId").value;
+        const name = document.getElementById("updateName").value;
+
+        if (id && name) {
+          fetchAndLog(`/api/items/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+        }
+      }
+
+      function deleteItem() {
+        const id = document.getElementById("deleteId").value;
+        if (id) {
+          fetchAndLog(`/api/items/${id}`, {
+            method: "DELETE",
+          });
+        }
+      }
+      // Функции для работы с отображением списка покупок
+      let showOnlyUnpurchased = false;
+      let currentItems = [];
+
+      async function loadShoppingList() {
+        try {
+          const response = await fetch("/api/items");
+          currentItems = await response.json();
+          renderShoppingList(currentItems);
+          updateStats();
+        } catch (error) {
+          console.error("Ошибка при загрузке списка:", error);
+        }
+      }
+
+      function renderShoppingList(items) {
+        const tbody = document.getElementById("shoppingListBody");
+        tbody.innerHTML = "";
+
+        if (items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                    Список покупок пуст. Добавьте первый товар!
+                </td>
+            </tr>
+        `;
+          return;
+        }
+
+        // Фильтруем если нужно показывать только некупленное
+        const filteredItems = showOnlyUnpurchased
+          ? items.filter((item) => !item.purchased)
+          : items;
+
+        filteredItems.forEach((item) => {
+          const row = document.createElement("tr");
+          row.style.borderBottom = "1px solid #eee";
+          row.style.backgroundColor = item.purchased ? "#f0f0f0" : "white";
+
+          row.innerHTML = `
+            <td style="padding: 10px; ${
+              item.purchased
+                ? "text-decoration: line-through; color: #888;"
+                : ""
+            }">
+                ${item.name}
+            </td>
+            <td style="padding: 10px;">${item.quantity}</td>
+            <td style="padding: 10px;">
+                <span style="background-color: #e6f3ff; padding: 3px 8px; border-radius: 12px; font-size: 12px;">
+                    ${item.category}
+                </span>
+            </td>
+            <td style="padding: 10px;">
+                <span style="color: ${
+                  item.purchased ? "green" : "orange"
+                }; font-weight: bold;">
+                    ${item.purchased ? "✅ Куплено" : "🛒 Нужно купить"}
+                </span>
+            </td>
+            <td style="padding: 10px;">
+                <button onclick="togglePurchase(${
+                  item.id
+                })" style="margin-right: 5px; padding: 5px 10px; font-size: 12px;">
+                    ${
+                      item.purchased
+                        ? "Отметить как нужное"
+                        : "Отметить купленным"
+                    }
+                </button>
+                <button onclick="deleteItemFromList(${
+                  item.id
+                })" style="padding: 5px 10px; font-size: 12px; background-color: #ffcccc;">
+                    Удалить
+                </button>
+            </td>
+        `;
+
+          tbody.appendChild(row);
+        });
+      }
+
+      function togglePurchase(itemId) {
+        fetch(`/api/items/${itemId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            purchased: !currentItems.find((item) => item.id === itemId)
+              .purchased,
+          }),
+        })
+          .then(() => {
+            loadShoppingList(); // Перезагружаем список
+            showNotification("Статус товара обновлен!");
+          })
+          .catch((error) => console.error("Ошибка:", error));
+      }
+
+      async function deleteItemFromList(itemId) {
+        if (!confirm("Удалить этот товар из списка?")) return;
+
+        try {
+          await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+          loadShoppingList(); // Перезагружаем список
+          showNotification("Товар удален из списка!");
+        } catch (error) {
+          console.error("Ошибка:", error);
+        }
+      }
+
+      function togglePurchased() {
+        showOnlyUnpurchased = !showOnlyUnpurchased;
+        document.getElementById("toggleText").textContent = showOnlyUnpurchased
+          ? "Показать все товары"
+          : "Показать только некупленное";
+        renderShoppingList(currentItems);
+      }
+
+      function filterByCategory() {
+        const category = document.getElementById("categorySelect").value;
+        if (!category) {
+          renderShoppingList(currentItems);
+          return;
+        }
+
+        const filtered = currentItems.filter(
+          (item) => item.category === category
+        );
+        renderShoppingList(filtered);
+      }
+
+      function updateStats() {
+        const total = currentItems.length;
+        const purchased = currentItems.filter((item) => item.purchased).length;
+        const statsEl = document.getElementById("listStats");
+
+        statsEl.innerHTML = `
+        Всего товаров: ${total} | 
+        Куплено: ${purchased} | 
+        Осталось купить: ${total - purchased}
+    `;
+      }
+
+      function showNotification(message) {
+        const notification = document.createElement("div");
+        notification.textContent = message;
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        z-index: 1000;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    `;
+
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+      }
+
+      document.addEventListener("DOMContentLoaded", loadShoppingList);
+    </script>
+  </body>
+</html>

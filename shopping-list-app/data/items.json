@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "Молоко",
+    "quantity": 1,
+    "category": "Молочные продукты",
+    "purchased": false
+  },
+  {
+    "id": 2,
+    "name": "Хлеб",
+    "quantity": 2,
+    "category": "Хлебобулочные изделия",
+    "purchased": true
+  }
+]
